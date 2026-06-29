@@ -1,0 +1,23 @@
+import { z } from "zod";
+
+export const createCategorySchema = z.object({
+  body: z.object({
+    name: z.string().trim().min(2, "Nome deve ter ao menos 2 caracteres").max(100),
+    description: z.string().trim().max(500).optional(),
+  }),
+});
+
+export const updateCategorySchema = z.object({
+  params: z.object({ id: z.string().uuid({ message: "Identificador inválido" }) }),
+  body: z
+    .object({
+      name: z.string().trim().min(2, "Nome deve ter ao menos 2 caracteres").max(100).optional(),
+      description: z.string().trim().max(500).optional(),
+    })
+    .refine((data) => Object.keys(data).length > 0, {
+      message: "Informe ao menos um campo para atualizar",
+    }),
+});
+
+export type CreateCategoryInput = z.infer<typeof createCategorySchema>["body"];
+export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>["body"];

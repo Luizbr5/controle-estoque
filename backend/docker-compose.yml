@@ -1,0 +1,57 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: controle-estoque-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: controle_estoque
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: controle-estoque-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      API_PREFIX: /api/v1
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/controle_estoque?schema=public
+      JWT_SECRET: ${JWT_SECRET:-troque-este-valor-por-um-segredo-forte-e-aleatorio}
+      JWT_EXPIRES_IN: 7d
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      UPLOAD_DIR: uploads/products
+      MAX_UPLOAD_SIZE_MB: 5
+    ports:
+      - "3001:3001"
+    volumes:
+      - backend_uploads:/app/uploads/products
+
+  adminer:
+    image: adminer:latest
+    container_name: controle-estoque-adminer
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:
+  backend_uploads:

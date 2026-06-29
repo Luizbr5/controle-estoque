@@ -1,0 +1,87 @@
+// ============================================================================
+// Prisma Schema — Controle de Estoque API (contrato v2.0.0)
+// Toda alteração de banco ocorre EXCLUSIVAMENTE via migrations geradas a partir
+// deste arquivo. Nenhum SQL manual é utilizado em nenhuma camada da aplicação.
+// ============================================================================
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MovementType {
+  IN
+  OUT
+  ADJUSTMENT
+}
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  stockMovements StockMovement[]
+
+  @@map("users")
+}
+
+model Category {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id          String   @id @default(uuid()) @db.Uuid
+  categoryId  String?  @map("category_id") @db.Uuid
+  name        String
+  description String?
+  sku         String?  @unique
+  price       Decimal  @db.Decimal(10, 2)
+  quantity    Int      @default(0)
+  minQuantity Int      @default(5) @map("min_quantity")
+  unit        String   @default("un")
+  isActive    Boolean  @default(true) @map("is_active")
+  imageUrl    String?  @map("image_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  category       Category?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  stockMovements StockMovement[]
+
+  @@index([categoryId])
+  @@index([isActive])
+  @@map("products")
+}
+
+model StockMovement {
+  id                   String        @id @default(uuid()) @db.Uuid
+  productId            String        @map("product_id") @db.Uuid
+  userId               String?       @map("user_id") @db.Uuid
+  type                 MovementType
+  quantity             Int
+  reason               String?
+  productQuantityAfter Int           @map("product_quantity_after")
+  createdAt            DateTime      @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([productId])
+  @@index([createdAt])
+  @@map("stock_movements")
+}
