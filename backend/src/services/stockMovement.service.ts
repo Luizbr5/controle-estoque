@@ -58,7 +58,7 @@ export const stockMovementService = {
 
   async create(dto: CreateStockMovementDTO, userId: string): Promise<StockMovementResponseDTO> {
     const movement = await prisma.$transaction(async (tx) => {
-      const product = await productRepository.findById(dto.product_id, tx);
+      const product = await productRepository.findByIdForUpdate(dto.product_id, tx);
       if (!product || !product.isActive) {
         throw ApiError.notFound("Produto não encontrado");
       }

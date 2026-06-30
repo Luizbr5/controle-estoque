@@ -50,6 +50,13 @@ export const productRepository = {
   async findById(id: string, client: Client = prisma): Promise<ProductWithCategory | null> {
     return client.product.findUnique({ where: { id }, include: { category: true } });
   },
+  
+  async findByIdForUpdate(id: string, tx: Prisma.TransactionClient): Promise<Product | null> {
+    const rows = await tx.$queryRaw<Product[]>`
+      SELECT * FROM products WHERE id = ${id}::uuid FOR UPDATE
+    `;
+    return rows[0] ?? null;
+  },
 
   async findBySku(sku: string, client: Client = prisma): Promise<Product | null> {
     return client.product.findUnique({ where: { sku } });
