@@ -31,7 +31,7 @@ services:
       PORT: 3001
       API_PREFIX: /api/v1
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/controle_estoque?schema=public
-      JWT_SECRET: ${JWT_SECRET:-troque-este-valor-por-um-segredo-forte-e-aleatorio}
+      JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRES_IN: 7d
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
       UPLOAD_DIR: uploads/products
