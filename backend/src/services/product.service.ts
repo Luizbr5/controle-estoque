@@ -53,9 +53,6 @@ export const productService = {
     const { page, limit } = normalizePagination(query, 100);
     const isActive = query.is_active ?? true;
 
-    // `low_stock` compara duas colunas (quantity <= min_quantity) e é resolvido
-    // em memória para manter 100% da interação com o banco via Prisma Client,
-    // sem SQL manual — espelhando exatamente o comportamento documentado.
     const all = await productRepository.search({
       search: query.search,
       categoryId: query.category_id,
@@ -79,16 +76,16 @@ export const productService = {
   },
 
   async create(dto: CreateProductDTO, userId: string): Promise<ProductResponseDTO> {
-    if (dto.sku) {
-      const existing = await productRepository.findBySku(dto.sku);
-      if (existing) {
-        throw ApiError.duplicate(`Já existe um produto com o SKU '${dto.sku}'`);
-      }
-    }
-
     const minQuantity = dto.min_quantity ?? 5;
 
     const product = await prisma.$transaction(async (tx) => {
+      if (dto.sku) {
+        const existing = await productRepository.findBySku(dto.sku, tx);
+        if (existing) {
+          throw ApiError.duplicate(`Já existe um produto com o SKU '${dto.sku}'`);
+        }
+      }
+
       const created = await productRepository.create(
         {
           name: dto.name,
@@ -104,8 +101,6 @@ export const productService = {
         tx,
       );
 
-      // Regra documentada: produto criado com quantidade inicial > 0 gera
-      // automaticamente um movimento de entrada ("Estoque inicial").
       if (created.quantity > 0) {
         await stockMovementRepository.create(
           {
@@ -127,35 +122,43 @@ export const productService = {
   },
 
   async update(id: string, dto: UpdateProductDTO): Promise<ProductResponseDTO> {
-    const current = await productRepository.findById(id);
-    if (!current) throw ApiError.notFound("Produto não encontrado");
+    const updated = await prisma.$transaction(async (tx) => {
+      const current = await productRepository.findById(id, tx);
+      if (!current) throw ApiError.notFound("Produto não encontrado");
 
-    if (dto.sku && dto.sku !== current.sku) {
-      const existing = await productRepository.findBySku(dto.sku);
-      if (existing) {
-        throw ApiError.duplicate(`Já existe um produto com o SKU '${dto.sku}'`);
+      if (dto.sku && dto.sku !== current.sku) {
+        const existing = await productRepository.findBySku(dto.sku, tx);
+        if (existing) {
+          throw ApiError.duplicate(`Já existe um produto com o SKU '${dto.sku}'`);
+        }
       }
-    }
 
-    const updated = await productRepository.update(id, {
-      name: dto.name !== undefined ? dto.name : current.name,
-      description: dto.description !== undefined ? (dto.description ?? null) : current.description,
-      sku: dto.sku !== undefined ? (dto.sku ?? null) : current.sku,
-      price: dto.price !== undefined ? dto.price : current.price,
-      quantity: dto.quantity !== undefined ? dto.quantity : current.quantity,
-      minQuantity: dto.min_quantity !== undefined ? dto.min_quantity : current.minQuantity,
-      unit: dto.unit !== undefined ? dto.unit : current.unit,
-      ...(dto.category_id !== undefined
-        ? {
-            category: dto.category_id ? { connect: { id: dto.category_id } } : { disconnect: true },
-          }
-        : {}),
+      return productRepository.update(
+        id,
+        {
+          name: dto.name !== undefined ? dto.name : current.name,
+          description:
+            dto.description !== undefined ? (dto.description ?? null) : current.description,
+          sku: dto.sku !== undefined ? (dto.sku ?? null) : current.sku,
+          price: dto.price !== undefined ? dto.price : current.price,
+          quantity: dto.quantity !== undefined ? dto.quantity : current.quantity,
+          minQuantity: dto.min_quantity !== undefined ? dto.min_quantity : current.minQuantity,
+          unit: dto.unit !== undefined ? dto.unit : current.unit,
+          ...(dto.category_id !== undefined
+            ? {
+                category: dto.category_id
+                  ? { connect: { id: dto.category_id } }
+                  : { disconnect: true },
+              }
+            : {}),
+        },
+        tx,
+      );
     });
 
     return toProductDTO(updated);
   },
 
-  /** Exclusão lógica (soft delete): mantém histórico e movimentações associadas. */
   async remove(id: string): Promise<void> {
     const current = await productRepository.findById(id);
     if (!current) throw ApiError.notFound("Produto não encontrado");
