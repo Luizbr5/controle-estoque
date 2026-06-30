@@ -1,4 +1,5 @@
 import type { Category } from "@prisma/client";
+import { prisma } from "@/config/prisma";
 import { categoryRepository } from "@/repositories/category.repository";
 import { ApiError } from "@/utils/ApiError";
 import type {
@@ -42,24 +43,44 @@ export const categoryService = {
   },
 
   async create(dto: CreateCategoryDTO): Promise<CategoryResponseDTO> {
-    const duplicate = await categoryRepository.findByNameInsensitive(dto.name);
-    if (duplicate) {
-      throw ApiError.duplicate("Já existe uma categoria com este nome");
-    }
-    const created = await categoryRepository.create({
-      name: dto.name,
-      description: dto.description ?? null,
+    const created = await prisma.$transaction(async (tx) => {
+      const duplicate = await categoryRepository.findByNameInsensitive(dto.name, tx);
+      if (duplicate) {
+        throw ApiError.duplicate("Já existe uma categoria com este nome");
+      }
+      return categoryRepository.create(
+        {
+          name: dto.name,
+          description: dto.description ?? null,
+        },
+        tx,
+      );
     });
     return toCategoryDTO(created);
   },
 
   async update(id: string, dto: UpdateCategoryDTO): Promise<CategoryResponseDTO> {
-    const current = await categoryRepository.findById(id);
-    if (!current) throw ApiError.notFound("Categoria não encontrada");
+    const updated = await prisma.$transaction(async (tx) => {
+      const current = await categoryRepository.findById(id, tx);
+      if (!current) throw ApiError.notFound("Categoria não encontrada");
 
-    const updated = await categoryRepository.update(id, {
-      name: dto.name ?? current.name,
-      description: dto.description ?? current.description,
+      // Verifica duplicidade de nome no update (excluindo a própria categoria)
+      if (dto.name && dto.name.toLowerCase() !== current.name.toLowerCase()) {
+        const duplicate = await categoryRepository.findByNameInsensitive(dto.name, tx);
+        if (duplicate) {
+          throw ApiError.duplicate("Já existe uma categoria com este nome");
+        }
+      }
+
+      return categoryRepository.update(
+        id,
+        {
+          name: dto.name ?? current.name,
+          // `!== undefined` garante que description: null remove o valor existente
+          description: dto.description !== undefined ? dto.description ?? null : current.description,
+        },
+        tx,
+      );
     });
     return toCategoryDTO(updated);
   },
