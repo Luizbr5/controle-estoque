@@ -141,7 +141,6 @@ export const productService = {
             dto.description !== undefined ? (dto.description ?? null) : current.description,
           sku: dto.sku !== undefined ? (dto.sku ?? null) : current.sku,
           price: dto.price !== undefined ? dto.price : current.price,
-          quantity: dto.quantity !== undefined ? dto.quantity : current.quantity,
           minQuantity: dto.min_quantity !== undefined ? dto.min_quantity : current.minQuantity,
           unit: dto.unit !== undefined ? dto.unit : current.unit,
           ...(dto.category_id !== undefined
