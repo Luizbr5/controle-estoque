@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import type { User } from "@prisma/client";
+import { prisma } from "@/config/prisma";
 import { userRepository } from "@/repositories/user.repository";
 import { signToken } from "@/middlewares/auth.middleware";
 import { ApiError } from "@/utils/ApiError";
@@ -18,16 +19,22 @@ export function toUserDTO(user: User): UserResponseDTO {
 
 export const authService = {
   async register(dto: RegisterDTO): Promise<AuthPayload> {
-    const existing = await userRepository.findByEmail(dto.email);
-    if (existing) {
-      throw ApiError.duplicate("Já existe um usuário cadastrado com este e-mail");
-    }
-
     const hashed = await bcrypt.hash(dto.password, SALT_ROUNDS);
-    const user = await userRepository.create({
-      name: dto.name,
-      email: dto.email,
-      password: hashed,
+
+    const user = await prisma.$transaction(async (tx) => {
+      const existing = await userRepository.findByEmail(dto.email, tx);
+      if (existing) {
+        throw ApiError.duplicate("Já existe um usuário cadastrado com este e-mail");
+      }
+
+      return userRepository.create(
+        {
+          name: dto.name,
+          email: dto.email,
+          password: hashed,
+        },
+        tx,
+      );
     });
 
     const token = signToken({ sub: user.id, name: user.name, email: user.email });
@@ -39,12 +46,10 @@ export const authService = {
     if (!user) {
       throw ApiError.unauthorized("E-mail ou senha inválidos");
     }
-
     const matches = await bcrypt.compare(dto.password, user.password);
     if (!matches) {
       throw ApiError.unauthorized("E-mail ou senha inválidos");
     }
-
     const token = signToken({ sub: user.id, name: user.name, email: user.email });
     return { user: toUserDTO(user), token };
   },
