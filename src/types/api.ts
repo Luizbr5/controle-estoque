@@ -112,8 +112,7 @@ export interface CreateProductDTO {
   unit?: string;
 }
 
-export type UpdateProductDTO = Partial<CreateProductDTO>;
-
+export type UpdateProductDTO = Partial<Omit<CreateProductDTO, "quantity">>;
 export interface ProductListQuery {
   page?: number;
   limit?: number;
