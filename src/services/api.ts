@@ -7,7 +7,7 @@ export const API_BASE_URL =
 
 // Flag temporária para uso de mocks enquanto o back-end não está disponível.
 // Remover quando o back-end estiver pronto: trocar para false (ou remover a checagem).
-export const USE_MOCK = true;
+export const USE_MOCK = false;
 
 export const TOKEN_STORAGE_KEY = "stockctl:token";
 
