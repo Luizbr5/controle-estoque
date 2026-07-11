@@ -2,6 +2,8 @@ import type { UserResponseDTO } from "./api.types";
 
 export interface AuthenticatedUser {
   id: string;
+  companyId: string;
+  role: "OWNER" | "ADMIN" | "EMPLOYEE";
   name: string;
   email: string;
 }

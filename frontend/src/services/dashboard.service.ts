@@ -21,7 +21,8 @@ export const dashboardService = {
       const summary: DashboardSummaryResponseDTO = {
         total_products: products.length,
         active_products: active.length,
-        low_stock_count: active.filter((p) => p.quantity > 0 && p.quantity <= p.min_quantity).length,
+        low_stock_count: active.filter((p) => p.quantity > 0 && p.quantity <= p.min_quantity)
+          .length,
         out_of_stock_count: active.filter((p) => p.quantity === 0).length,
         total_categories: categories.length,
         total_stock_value: active.reduce((s, p) => s + p.price * p.quantity, 0),
@@ -31,9 +32,7 @@ export const dashboardService = {
       return mockDelay(summary);
     }
     try {
-      const { data } = await api.get<ApiSuccess<DashboardSummaryResponseDTO>>(
-        "/dashboard/summary",
-      );
+      const { data } = await api.get<ApiSuccess<DashboardSummaryResponseDTO>>("/dashboard/summary");
       return data.data;
     } catch (e) {
       throw toClientError(e);
@@ -42,15 +41,11 @@ export const dashboardService = {
 
   async lowStock(): Promise<ProductResponseDTO[]> {
     if (USE_MOCK) {
-      const list = products.filter(
-        (p) => p.is_active && p.quantity <= p.min_quantity,
-      );
+      const list = products.filter((p) => p.is_active && p.quantity <= p.min_quantity);
       return mockDelay(list);
     }
     try {
-      const { data } = await api.get<ApiListSuccess<ProductResponseDTO>>(
-        "/dashboard/low-stock",
-      );
+      const { data } = await api.get<ApiListSuccess<ProductResponseDTO>>("/dashboard/low-stock");
       return data.data;
     } catch (e) {
       throw toClientError(e);

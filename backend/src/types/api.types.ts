@@ -60,10 +60,14 @@ export const ErrorCode = {
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
 
 // ----- Auth -----
+export type UserRole = "OWNER" | "ADMIN" | "EMPLOYEE";
 export interface UserResponseDTO {
   id: UUID;
   name: string;
   email: string;
+  company_id: UUID;
+  company_name: string;
+  role: UserRole;
   created_at?: ISODate;
 }
 
@@ -71,6 +75,7 @@ export interface RegisterDTO {
   name: string;
   email: string;
   password: string;
+  company_name: string;
 }
 
 export interface LoginDTO {

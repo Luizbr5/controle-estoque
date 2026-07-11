@@ -6,6 +6,7 @@ type Client = typeof prisma | Prisma.TransactionClient;
 export type ProductWithCategory = Prisma.ProductGetPayload<{ include: { category: true } }>;
 
 export interface ProductSearchFilters {
+  companyId: string;
   search?: string;
   categoryId?: string;
   isActive?: boolean;
@@ -14,17 +15,13 @@ export interface ProductSearchFilters {
 }
 
 export const productRepository = {
-  /**
-   * Retorna todos os produtos que casam com os filtros suportados em nível
-   * de banco (busca textual, categoria, status ativo, ordenação). O filtro
-   * `low_stock` (quantity <= min_quantity) compara duas colunas e é resolvido
-   * na camada de serviço para evitar SQL manual, espelhando o contrato oficial.
-   */
   async search(
     filters: ProductSearchFilters,
     client: Client = prisma,
   ): Promise<ProductWithCategory[]> {
-    const where: Prisma.ProductWhereInput = {};
+    const where: Prisma.ProductWhereInput = {
+      companyId: filters.companyId,
+    };
 
     if (filters.isActive !== undefined) where.isActive = filters.isActive;
     if (filters.categoryId) where.categoryId = filters.categoryId;
@@ -42,24 +39,40 @@ export const productRepository = {
     });
   },
 
-  /** Retorna todos os produtos (sem relações) para agregações como o dashboard. */
-  async findAllRaw(client: Client = prisma): Promise<Product[]> {
-    return client.product.findMany();
+  async findAllRaw(companyId: string, client: Client = prisma): Promise<Product[]> {
+    return client.product.findMany({ where: { companyId } });
   },
 
-  async findById(id: string, client: Client = prisma): Promise<ProductWithCategory | null> {
-    return client.product.findUnique({ where: { id }, include: { category: true } });
+  async findById(
+    id: string,
+    companyId: string,
+    client: Client = prisma,
+  ): Promise<ProductWithCategory | null> {
+    return client.product.findFirst({
+      where: { id, companyId },
+      include: { category: true },
+    });
   },
-  
-  async findByIdForUpdate(id: string, tx: Prisma.TransactionClient): Promise<Product | null> {
+
+  async findByIdForUpdate(
+    id: string,
+    companyId: string,
+    tx: Prisma.TransactionClient,
+  ): Promise<Product | null> {
     const rows = await tx.$queryRaw<Product[]>`
-      SELECT * FROM products WHERE id = ${id}::uuid FOR UPDATE
+      SELECT * FROM products WHERE id = ${id}::uuid AND company_id = ${companyId}::uuid FOR UPDATE
     `;
     return rows[0] ?? null;
   },
 
-  async findBySku(sku: string, client: Client = prisma): Promise<Product | null> {
-    return client.product.findUnique({ where: { sku } });
+  async findBySku(
+    sku: string,
+    companyId: string,
+    client: Client = prisma,
+  ): Promise<Product | null> {
+    return client.product.findFirst({
+      where: { sku, companyId },
+    });
   },
 
   async create(

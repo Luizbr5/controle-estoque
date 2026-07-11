@@ -37,7 +37,10 @@ function startOfDayUtc(dateStr: string): Date {
 }
 
 export const stockMovementService = {
-  async list(query: StockMovementListQuery): Promise<{
+  async list(
+    query: StockMovementListQuery,
+    companyId: string,
+  ): Promise<{
     data: StockMovementResponseDTO[];
     meta: ApiListSuccess<StockMovementResponseDTO>["meta"];
   }> {
@@ -45,6 +48,7 @@ export const stockMovementService = {
 
     const { rows, total } = await stockMovementRepository.findManyPaginated(
       {
+        companyId,
         productId: query.product_id,
         type: query.type,
         startDate: query.start_date ? startOfDayUtc(query.start_date) : undefined,
@@ -56,9 +60,13 @@ export const stockMovementService = {
     return { data: rows.map(toStockMovementDTO), meta: buildMeta(total, page, limit) };
   },
 
-  async create(dto: CreateStockMovementDTO, userId: string): Promise<StockMovementResponseDTO> {
+  async create(
+    dto: CreateStockMovementDTO,
+    userId: string,
+    companyId: string,
+  ): Promise<StockMovementResponseDTO> {
     const movement = await prisma.$transaction(async (tx) => {
-      const product = await productRepository.findByIdForUpdate(dto.product_id, tx);
+      const product = await productRepository.findByIdForUpdate(dto.product_id, companyId, tx);
       if (!product || !product.isActive) {
         throw ApiError.notFound("Produto não encontrado");
       }
@@ -75,23 +83,29 @@ export const stockMovementService = {
         }
         newQuantity -= dto.quantity;
       } else {
-        // ADJUSTMENT: define a quantidade absoluta em estoque.
         newQuantity = dto.quantity;
       }
 
-      await productRepository.update(product.id, { quantity: newQuantity }, tx);
+      await tx.product.update({
+        where: { id: product.id },
+        data: { quantity: newQuantity },
+      });
 
-      return stockMovementRepository.create(
-        {
-          product: { connect: { id: product.id } },
-          user: { connect: { id: userId } },
+      return tx.stockMovement.create({
+        data: {
+          companyId,
+          productId: product.id,
+          userId,
           type: dto.type,
           quantity: dto.quantity,
           reason: dto.reason ?? null,
           productQuantityAfter: newQuantity,
         },
-        tx,
-      );
+        include: {
+          product: { select: { id: true, name: true } },
+          user: { select: { id: true, name: true } },
+        },
+      });
     });
 
     return toStockMovementDTO(movement);

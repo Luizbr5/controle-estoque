@@ -1,147 +1,184 @@
-/* eslint-disable no-console */
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
+import { prisma } from "../src/config/prisma";
 
-const prisma = new PrismaClient();
+const SALT_ROUNDS = 10;
 
-const SEED_USER_PASSWORD = "senha123";
+async function main() {
+  console.log("🌱 Iniciando seed do banco de dados...");
 
-async function main(): Promise<void> {
-  console.log("🌱 Iniciando seed...");
-
-  const hashed = await bcrypt.hash(SEED_USER_PASSWORD, 10);
-  const user = await prisma.user.upsert({
-    where: { email: "maria@empresa.com" },
+  // 1. Criar empresa padrão
+  const company = await prisma.company.upsert({
+    where: { slug: "minha-empresa" },
     update: {},
-    create: { name: "Maria Silva", email: "maria@empresa.com", password: hashed },
+    create: {
+      id: "00000000-0000-0000-0000-000000000001",
+      name: "Minha Empresa",
+      slug: "minha-empresa",
+    },
   });
+  console.log(`✅ Empresa criada: ${company.name}`);
 
-  const [eletronicos, papelaria, ferramentas] = await Promise.all([
+
+  // 2. Criar usuário padrão
+  const hashedPassword = await bcrypt.hash("senha123", SALT_ROUNDS);
+  const user = await prisma.user.upsert({
+    where: { companyId_email: { companyId: company.id, email: "maria@empresa.com" } },
+    update: {},
+    create: {
+      companyId: company.id,
+      name: "Maria Silva",
+      email: "maria@empresa.com",
+      password: hashedPassword,
+      role: "OWNER",
+    },
+  });
+  console.log(`✅ Usuário criado: ${user.name} (${user.email})`);
+
+  // 3. Criar categorias
+  const categories = await Promise.all([
     prisma.category.upsert({
-      where: { id: "b1c2d3e4-5678-4abc-9def-012345678901" },
+      where: { companyId_name: { companyId: company.id, name: "Eletrônicos" } },
       update: {},
       create: {
-        id: "b1c2d3e4-5678-4abc-9def-012345678901",
+        companyId: company.id,
         name: "Eletrônicos",
-        description: "Equipamentos e acessórios eletrônicos",
+        description: "Produtos eletrônicos em geral",
       },
     }),
     prisma.category.upsert({
-      where: { id: "c2d3e4f5-6789-4bcd-aef0-123456789012" },
-      update: {},
-      create: { id: "c2d3e4f5-6789-4bcd-aef0-123456789012", name: "Papelaria", description: null },
-    }),
-    prisma.category.upsert({
-      where: { id: "d3e4f5a6-7890-4cde-bff0-234567890123" },
+      where: { companyId_name: { companyId: company.id, name: "Papelaria" } },
       update: {},
       create: {
-        id: "d3e4f5a6-7890-4cde-bff0-234567890123",
-        name: "Ferramentas",
-        description: "Ferramentas manuais e elétricas",
+        companyId: company.id,
+        name: "Papelaria",
+        description: "Produtos de papelaria",
+      },
+    }),
+    prisma.category.upsert({
+      where: { companyId_name: { companyId: company.id, name: "Periféricos" } },
+      update: {},
+      create: {
+        companyId: company.id,
+        name: "Periféricos",
+        description: "Periféricos de computador",
       },
     }),
   ]);
+  console.log(`✅ ${categories.length} categorias criadas`);
 
-  const cabo = await prisma.product.upsert({
-    where: { sku: "CAB-USBC-2M" },
-    update: {},
-    create: {
-      categoryId: eletronicos.id,
-      name: "Cabo USB-C 2m",
-      description: "Cabo de carregamento e dados USB-C",
-      sku: "CAB-USBC-2M",
-      price: 29.9,
-      quantity: 3,
-      minQuantity: 10,
-      unit: "un",
-    },
-  });
+  // 4. Criar produtos
+  const products = await Promise.all([
+    prisma.product.upsert({
+      where: { companyId_sku: { companyId: company.id, sku: "CABO-USB-C-2M" } },
+      update: {},
+      create: {
+        companyId: company.id,
+        categoryId: categories[2].id,
+        name: "Cabo USB-C 2m",
+        description: "Cabo USB-C de alta qualidade",
+        sku: "CABO-USB-C-2M",
+        price: 35.9,
+        quantity: 50,
+        minQuantity: 10,
+        unit: "un",
+        isActive: true,
+      },
+    }),
+    prisma.product.upsert({
+      where: { companyId_sku: { companyId: company.id, sku: "CANETA-ESFEROGR-AZUL" } },
+      update: {},
+      create: {
+        companyId: company.id,
+        categoryId: categories[1].id,
+        name: "Caneta Esferográfica Azul",
+        description: "Caneta azul com ponta fina",
+        sku: "CANETA-ESFEROGR-AZUL",
+        price: 2.5,
+        quantity: 200,
+        minQuantity: 50,
+        unit: "un",
+        isActive: true,
+      },
+    }),
+    prisma.product.upsert({
+      where: { companyId_sku: { companyId: company.id, sku: "MOUSE-WIRELESS" } },
+      update: {},
+      create: {
+        companyId: company.id,
+        categoryId: categories[0].id,
+        name: "Mouse Wireless",
+        description: "Mouse sem fio ergonômico",
+        sku: "MOUSE-WIRELESS",
+        price: 89.9,
+        quantity: 30,
+        minQuantity: 5,
+        unit: "un",
+        isActive: true,
+      },
+    }),
+    prisma.product.upsert({
+      where: { companyId_sku: { companyId: company.id, sku: "TECLADO-MECANICO" } },
+      update: {},
+      create: {
+        companyId: company.id,
+        categoryId: categories[0].id,
+        name: "Teclado Mecânico RGB",
+        description: "Teclado mecânico com RGB",
+        sku: "TECLADO-MECANICO",
+        price: 250.0,
+        quantity: 15,
+        minQuantity: 3,
+        unit: "un",
+        isActive: true,
+      },
+    }),
+  ]);
+  console.log(`✅ ${products.length} produtos criados`);
 
-  const mouse = await prisma.product.upsert({
-    where: { sku: "MSE-WL-001" },
-    update: {},
-    create: {
-      categoryId: eletronicos.id,
-      name: "Mouse Sem Fio",
-      description: "Mouse wireless 2.4GHz com receptor USB",
-      sku: "MSE-WL-001",
-      price: 89.9,
-      quantity: 50,
-      minQuantity: 10,
-      unit: "un",
-    },
-  });
+  // 5. Criar movimentações de estoque
+  await Promise.all([
+    prisma.stockMovement.create({
+      data: {
+        companyId: company.id,
+        productId: products[0].id,
+        userId: user.id,
+        type: "IN",
+        quantity: 50,
+        reason: "Estoque inicial",
+        productQuantityAfter: 50,
+      },
+    }),
+    prisma.stockMovement.create({
+      data: {
+        companyId: company.id,
+        productId: products[1].id,
+        userId: user.id,
+        type: "IN",
+        quantity: 200,
+        reason: "Estoque inicial",
+        productQuantityAfter: 200,
+      },
+    }),
+    prisma.stockMovement.create({
+      data: {
+        companyId: company.id,
+        productId: products[2].id,
+        userId: user.id,
+        type: "IN",
+        quantity: 30,
+        reason: "Estoque inicial",
+        productQuantityAfter: 30,
+      },
+    }),
+  ]);
+  console.log("✅ Movimentações de estoque criadas");
 
-  const caneta = await prisma.product.upsert({
-    where: { sku: "CAN-AZL-050" },
-    update: {},
-    create: {
-      categoryId: papelaria.id,
-      name: "Caneta Esferográfica Azul",
-      description: "Caixa com 50 unidades",
-      sku: "CAN-AZL-050",
-      price: 45.0,
-      quantity: 0,
-      minQuantity: 5,
-      unit: "cx",
-    },
-  });
-
-  const chave = await prisma.product.upsert({
-    where: { sku: "CHV-FEN-6" },
-    update: {},
-    create: {
-      categoryId: ferramentas.id,
-      name: "Chave de Fenda 6mm",
-      description: "Cabo emborrachado",
-      sku: "CHV-FEN-6",
-      price: 18.5,
-      quantity: 120,
-      minQuantity: 20,
-      unit: "un",
-    },
-  });
-
-  const existingMovements = await prisma.stockMovement.count();
-  if (existingMovements === 0) {
-    await prisma.stockMovement.createMany({
-      data: [
-        {
-          productId: mouse.id,
-          userId: user.id,
-          type: "IN",
-          quantity: 30,
-          reason: "Recebimento de compra — NF 4521",
-          productQuantityAfter: 80,
-        },
-        {
-          productId: cabo.id,
-          userId: user.id,
-          type: "OUT",
-          quantity: 7,
-          reason: "Venda balcão",
-          productQuantityAfter: 3,
-        },
-        {
-          productId: chave.id,
-          userId: user.id,
-          type: "ADJUSTMENT",
-          quantity: 120,
-          reason: "Inventário físico",
-          productQuantityAfter: 120,
-        },
-      ],
-    });
-  }
-
-  console.log("✅ Seed concluído.");
-  console.log(`   Usuário de teste: maria@empresa.com / senha: ${SEED_USER_PASSWORD}`);
-  console.log(`   Produtos: ${[cabo, mouse, caneta, chave].length} | Categorias: 3`);
+  console.log("\n✨ Seed finalizado com sucesso!\n");
 }
 
 main()
-  .catch((err) => {
-    console.error("❌ Erro ao executar o seed:", err);
+  .catch((e) => {
+    console.error("❌ Erro durante seed:", e);
     process.exit(1);
   })
   .finally(async () => {

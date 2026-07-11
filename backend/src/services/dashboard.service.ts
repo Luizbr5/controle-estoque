@@ -33,10 +33,10 @@ function utcMonthBounds(): { start: Date; end: Date } {
 }
 
 export const dashboardService = {
-  async summary(): Promise<DashboardSummaryResponseDTO> {
+  async summary(companyId: string): Promise<DashboardSummaryResponseDTO> {
     const [allProducts, totalCategories] = await Promise.all([
-      productRepository.findAllRaw(),
-      categoryRepository.count(),
+      productRepository.findAllRaw(companyId),
+      categoryRepository.count(companyId),
     ]);
 
     const active = allProducts.filter((p) => p.isActive);
@@ -49,8 +49,8 @@ export const dashboardService = {
     const today = utcDayBounds();
     const month = utcMonthBounds();
     const [movementsToday, movementsThisMonth] = await Promise.all([
-      stockMovementRepository.countByDateRange(today.start, today.end),
-      stockMovementRepository.countByDateRange(month.start, month.end),
+      stockMovementRepository.countByDateRange(companyId, today.start, today.end),
+      stockMovementRepository.countByDateRange(companyId, month.start, month.end),
     ]);
 
     return {
@@ -65,20 +65,20 @@ export const dashboardService = {
     };
   },
 
-  async lowStock(): Promise<{
+  async lowStock(companyId: string): Promise<{
     data: ProductResponseDTO[];
     meta: ApiListSuccess<ProductResponseDTO>["meta"];
   }> {
-    const all = await productRepository.search({ isActive: true });
+    const all = await productRepository.search({ companyId, isActive: true });
     const low = all.filter((p) => p.quantity <= p.minQuantity).map(toProductDTO);
     return { data: low, meta: listMeta(low.length, low.length) };
   },
 
-  async recentMovements(): Promise<{
+  async recentMovements(companyId: string): Promise<{
     data: StockMovementResponseDTO[];
     meta: ApiListSuccess<StockMovementResponseDTO>["meta"];
   }> {
-    const recent = await stockMovementRepository.findRecent(10);
+    const recent = await stockMovementRepository.findRecent(companyId, 10);
     const data = recent.map(toStockMovementDTO);
     return { data, meta: listMeta(data.length, 10) };
   },

@@ -1,25 +1,14 @@
 import { api, USE_MOCK, mockDelay, ApiClientError, toClientError } from "./api";
 import { mockUser } from "./mock-db";
-import type {
-  ApiSuccess,
-  AuthPayload,
-  LoginDTO,
-  RegisterDTO,
-  UserResponseDTO,
-} from "@/types/api";
+import type { ApiSuccess, AuthPayload, LoginDTO, RegisterDTO, UserResponseDTO } from "@/types/api";
 
-const FAKE_TOKEN =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock-payload.mock-signature";
+const FAKE_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.mock-payload.mock-signature";
 
 export const authService = {
   async login(dto: LoginDTO): Promise<AuthPayload> {
     if (USE_MOCK) {
       if (!dto.email.includes("@") || dto.password.length < 6) {
-        throw new ApiClientError(
-          "UNAUTHORIZED",
-          "E-mail ou senha inválidos",
-          401,
-        );
+        throw new ApiClientError("UNAUTHORIZED", "E-mail ou senha inválidos", 401);
       }
       return mockDelay({
         user: { ...mockUser, name: mockUser.name, email: dto.email },
@@ -27,10 +16,7 @@ export const authService = {
       });
     }
     try {
-      const { data } = await api.post<ApiSuccess<AuthPayload>>(
-        "/auth/login",
-        dto,
-      );
+      const { data } = await api.post<ApiSuccess<AuthPayload>>("/auth/login", dto);
       return data.data;
     } catch (e) {
       throw toClientError(e);
@@ -51,10 +37,7 @@ export const authService = {
       });
     }
     try {
-      const { data } = await api.post<ApiSuccess<AuthPayload>>(
-        "/auth/register",
-        dto,
-      );
+      const { data } = await api.post<ApiSuccess<AuthPayload>>("/auth/register", dto);
       return data.data;
     } catch (e) {
       throw toClientError(e);

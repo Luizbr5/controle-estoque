@@ -14,6 +14,7 @@ const schema = z.object({
   name: z.string().min(2, "Mínimo de 2 caracteres"),
   email: z.string().email("E-mail inválido"),
   password: z.string().min(6, "Mínimo de 6 caracteres"),
+  company_name: z.string().min(2, "Mínimo de 2 caracteres"),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -56,6 +57,12 @@ export function RegisterPage() {
         </div>
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <Input label="Nome" required error={errors.name?.message} {...register("name")} />
+          <Input
+            label="Empresa"
+            required
+            error={errors.company_name?.message}
+            {...register("company_name")}
+          />
           <Input
             type="email"
             label="E-mail"

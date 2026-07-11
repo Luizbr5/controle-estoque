@@ -12,5 +12,4 @@ export const dateTime = (iso: string) =>
     minute: "2-digit",
   });
 
-export const date = (iso: string) =>
-  new Date(iso).toLocaleDateString("pt-BR");
+export const date = (iso: string) => new Date(iso).toLocaleDateString("pt-BR");

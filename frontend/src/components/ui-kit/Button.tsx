@@ -9,8 +9,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary: "bg-primary text-primary-foreground hover:bg-primary-hover",
-        secondary:
-          "bg-surface text-foreground border border-border hover:bg-accent",
+        secondary: "bg-surface text-foreground border border-border hover:bg-accent",
         danger: "bg-danger text-danger-foreground hover:opacity-90",
         ghost: "text-foreground hover:bg-accent",
         icon: "text-muted-foreground hover:bg-accent hover:text-foreground rounded-md",
@@ -27,8 +26,7 @@ const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  extends ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   loading?: boolean;
 }
 

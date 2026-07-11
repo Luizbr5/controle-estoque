@@ -36,7 +36,10 @@ const cards = [
   { key: "total_stock_value", label: "Valor Total", icon: DollarSign, accent: "text-success" },
 ] as const;
 
-const typeBadge: Record<StockMovementType, { label: string; variant: "success" | "danger" | "primary" }> = {
+const typeBadge: Record<
+  StockMovementType,
+  { label: string; variant: "success" | "danger" | "primary" }
+> = {
   IN: { label: "Entrada", variant: "success" },
   OUT: { label: "Saída", variant: "danger" },
   ADJUSTMENT: { label: "Ajuste", variant: "primary" },
@@ -190,7 +193,11 @@ export function DashboardPage() {
                 ))}
               </ul>
             ) : (
-              <EmptyState icon={Package} title="Tudo em ordem" description="Nenhum produto com estoque baixo." />
+              <EmptyState
+                icon={Package}
+                title="Tudo em ordem"
+                description="Nenhum produto com estoque baixo."
+              />
             )}
           </CardBody>
         </Card>

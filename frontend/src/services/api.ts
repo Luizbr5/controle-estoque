@@ -5,9 +5,7 @@ export const API_BASE_URL =
   (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_API_URL) ||
   "http://localhost:3001/api/v1";
 
-// Flag temporária para uso de mocks enquanto o back-end não está disponível.
-// Remover quando o back-end estiver pronto: trocar para false (ou remover a checagem).
-export const USE_MOCK = true;
+export const USE_MOCK = false;
 
 export const TOKEN_STORAGE_KEY = "stockctl:token";
 
@@ -55,6 +53,7 @@ export class ApiClientError extends Error {
   code: string;
   status: number;
   details?: unknown;
+
   constructor(code: string, message: string, status = 500, details?: unknown) {
     super(message);
     this.code = code;
@@ -75,14 +74,9 @@ export function toClientError(err: unknown): ApiClientError {
       body.error.details,
     );
   }
-  return new ApiClientError(
-    "INTERNAL_ERROR",
-    (err as Error)?.message ?? "Erro inesperado",
-    500,
-  );
+  return new ApiClientError("INTERNAL_ERROR", (err as Error)?.message ?? "Erro inesperado", 500);
 }
 
-// Helper para simular latência nos mocks.
 export function mockDelay<T>(value: T, ms = 250): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms));
 }

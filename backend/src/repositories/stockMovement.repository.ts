@@ -13,6 +13,7 @@ export type StockMovementWithRelations = Prisma.StockMovementGetPayload<{
 }>;
 
 export interface StockMovementFilters {
+  companyId: string;
   productId?: string;
   type?: "IN" | "OUT" | "ADJUSTMENT";
   startDate?: Date;
@@ -20,15 +21,17 @@ export interface StockMovementFilters {
 }
 
 function buildWhere(filters: StockMovementFilters): Prisma.StockMovementWhereInput {
-  const where: Prisma.StockMovementWhereInput = {};
-  if (filters.productId) where.productId = filters.productId;
-  if (filters.type) where.type = filters.type;
-  if (filters.startDate || filters.endDate) {
-    where.createdAt = {
-      ...(filters.startDate ? { gte: filters.startDate } : {}),
-      ...(filters.endDate ? { lte: filters.endDate } : {}),
-    };
-  }
+  const where: Prisma.StockMovementWhereInput = {
+    companyId: filters.companyId,
+    ...(filters.productId && { productId: filters.productId }),
+    ...(filters.type && { type: filters.type }),
+    ...(filters.startDate || filters.endDate) && {
+      createdAt: {
+        ...(filters.startDate && { gte: filters.startDate }),
+        ...(filters.endDate && { lte: filters.endDate }),
+      },
+    },
+  };
   return where;
 }
 
@@ -52,8 +55,13 @@ export const stockMovementRepository = {
     return { rows, total };
   },
 
-  async findRecent(limit: number, client: Client = prisma): Promise<StockMovementWithRelations[]> {
+  async findRecent(
+    companyId: string,
+    limit: number,
+    client: Client = prisma,
+  ): Promise<StockMovementWithRelations[]> {
     return client.stockMovement.findMany({
+      where: { companyId },
       include: includeRelations,
       orderBy: { createdAt: "desc" },
       take: limit,
@@ -67,8 +75,15 @@ export const stockMovementRepository = {
     return client.stockMovement.create({ data, include: includeRelations });
   },
 
-  async countByDateRange(start: Date, end: Date, client: Client = prisma): Promise<number> {
-    return client.stockMovement.count({ where: { createdAt: { gte: start, lte: end } } });
+  async countByDateRange(
+    companyId: string,
+    start: Date,
+    end: Date,
+    client: Client = prisma,
+  ): Promise<number> {
+    return client.stockMovement.count({
+      where: { companyId, createdAt: { gte: start, lte: end } },
+    });
   },
 };
 

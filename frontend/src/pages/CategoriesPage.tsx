@@ -49,7 +49,10 @@ export function CategoriesPage() {
   const saveMutation = useMutation({
     mutationFn: (v: FormValues) =>
       editing
-        ? categoryService.update(editing.id, { name: v.name, description: v.description || undefined })
+        ? categoryService.update(editing.id, {
+            name: v.name,
+            description: v.description || undefined,
+          })
         : categoryService.create({ name: v.name, description: v.description || undefined }),
     onSuccess: () => {
       toast.success(editing ? "Categoria atualizada" : "Categoria criada");
@@ -100,7 +103,12 @@ export function CategoriesPage() {
                     </p>
                   </div>
                   <div className="flex gap-1">
-                    <Button variant="icon" size="icon" onClick={() => openEdit(c)} aria-label="Editar">
+                    <Button
+                      variant="icon"
+                      size="icon"
+                      onClick={() => openEdit(c)}
+                      aria-label="Editar"
+                    >
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button

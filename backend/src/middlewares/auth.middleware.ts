@@ -6,7 +6,8 @@ import type { AuthenticatedUser } from "@/types/express";
 
 export interface JwtPayload {
   sub: string;
-  name: string;
+  company_id: string;
+  role: "OWNER" | "ADMIN" | "EMPLOYEE";
   email: string;
 }
 
@@ -37,8 +38,10 @@ export function authenticate(req: Request, _res: Response, next: NextFunction): 
     const decoded = jwt.verify(token, env.JWT_SECRET) as jwt.JwtPayload & JwtPayload;
     const user: AuthenticatedUser = {
       id: decoded.sub,
-      name: decoded.name,
+      companyId: decoded.company_id,
+      role: decoded.role,
       email: decoded.email,
+      name: "",
     };
     req.user = user;
     next();

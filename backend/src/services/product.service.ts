@@ -1,10 +1,5 @@
 import { prisma } from "@/config/prisma";
-import {
-  productRepository,
-  type ProductSearchFilters,
-  type ProductWithCategory,
-} from "@/repositories/product.repository";
-import { stockMovementRepository } from "@/repositories/stockMovement.repository";
+import { productRepository } from "@/repositories/product.repository";
 import { ApiError } from "@/utils/ApiError";
 import { buildMeta, normalizePagination } from "@/utils/pagination";
 import type {
@@ -15,21 +10,20 @@ import type {
   UpdateProductDTO,
 } from "@/types/api.types";
 
-const sortFieldMap: Record<
-  NonNullable<ProductListQuery["sort_by"]>,
-  ProductSearchFilters["sortBy"]
-> = {
+const sortFieldMap: Record<string, "name" | "quantity" | "price" | "createdAt"> = {
   name: "name",
   quantity: "quantity",
   price: "price",
   created_at: "createdAt",
 };
 
-export function toProductDTO(product: ProductWithCategory): ProductResponseDTO {
+export function toProductDTO(product: any): ProductResponseDTO {
   return {
     id: product.id,
     category_id: product.categoryId,
-    category: product.category ? { id: product.category.id, name: product.category.name } : null,
+    category: product.category
+      ? { id: product.category.id, name: product.category.name }
+      : null,
     name: product.name,
     description: product.description,
     sku: product.sku,
@@ -46,7 +40,7 @@ export function toProductDTO(product: ProductWithCategory): ProductResponseDTO {
 }
 
 export const productService = {
-  async list(query: ProductListQuery): Promise<{
+  async list(query: ProductListQuery, companyId: string): Promise<{
     data: ProductResponseDTO[];
     meta: ApiListSuccess<ProductResponseDTO>["meta"];
   }> {
@@ -54,6 +48,7 @@ export const productService = {
     const isActive = query.is_active ?? true;
 
     const all = await productRepository.search({
+      companyId,
       search: query.search,
       categoryId: query.category_id,
       isActive,
@@ -69,25 +64,35 @@ export const productService = {
     return { data: paged.map(toProductDTO), meta: buildMeta(total, page, limit) };
   },
 
-  async getById(id: string): Promise<ProductResponseDTO> {
-    const product = await productRepository.findById(id);
+  async getById(id: string, companyId: string): Promise<ProductResponseDTO> {
+    const product = await productRepository.findById(id, companyId);
     if (!product) throw ApiError.notFound("Produto não encontrado");
     return toProductDTO(product);
   },
 
-  async create(dto: CreateProductDTO, userId: string): Promise<ProductResponseDTO> {
+  async create(dto: CreateProductDTO, userId: string, companyId: string): Promise<ProductResponseDTO> {
     const minQuantity = dto.min_quantity ?? 5;
 
     const product = await prisma.$transaction(async (tx) => {
       if (dto.sku) {
-        const existing = await productRepository.findBySku(dto.sku, tx);
+        const existing = await productRepository.findBySku(dto.sku, companyId, tx);
         if (existing) {
           throw ApiError.duplicate(`Já existe um produto com o SKU '${dto.sku}'`);
         }
       }
 
-      const created = await productRepository.create(
-        {
+      if (dto.category_id) {
+        const category = await tx.category.findFirst({
+          where: { id: dto.category_id, companyId },
+        });
+        if (!category) {
+          throw ApiError.notFound("Categoria não encontrada");
+        }
+      }
+
+      const created = await tx.product.create({
+        data: {
+          companyId,
           name: dto.name,
           description: dto.description ?? null,
           sku: dto.sku ?? null,
@@ -96,23 +101,23 @@ export const productService = {
           minQuantity,
           unit: dto.unit ?? "un",
           isActive: true,
-          ...(dto.category_id ? { category: { connect: { id: dto.category_id } } } : {}),
+          ...(dto.category_id && { categoryId: dto.category_id }),
         },
-        tx,
-      );
+        include: { category: true },
+      });
 
       if (created.quantity > 0) {
-        await stockMovementRepository.create(
-          {
-            product: { connect: { id: created.id } },
-            user: { connect: { id: userId } },
+        await tx.stockMovement.create({
+          data: {
+            companyId,
+            productId: created.id,
+            userId,
             type: "IN",
             quantity: created.quantity,
             reason: "Estoque inicial",
             productQuantityAfter: created.quantity,
           },
-          tx,
-        );
+        });
       }
 
       return created;
@@ -121,51 +126,57 @@ export const productService = {
     return toProductDTO(product);
   },
 
-  async update(id: string, dto: UpdateProductDTO): Promise<ProductResponseDTO> {
+  async update(
+    id: string,
+    dto: UpdateProductDTO,
+    companyId: string,
+  ): Promise<ProductResponseDTO> {
     const updated = await prisma.$transaction(async (tx) => {
-      const current = await productRepository.findById(id, tx);
+      const current = await productRepository.findById(id, companyId, tx);
       if (!current) throw ApiError.notFound("Produto não encontrado");
 
       if (dto.sku && dto.sku !== current.sku) {
-        const existing = await productRepository.findBySku(dto.sku, tx);
+        const existing = await productRepository.findBySku(dto.sku, companyId, tx);
         if (existing) {
           throw ApiError.duplicate(`Já existe um produto com o SKU '${dto.sku}'`);
         }
       }
 
-      return productRepository.update(
-        id,
-        {
-          name: dto.name !== undefined ? dto.name : current.name,
-          description:
-            dto.description !== undefined ? (dto.description ?? null) : current.description,
-          sku: dto.sku !== undefined ? (dto.sku ?? null) : current.sku,
-          price: dto.price !== undefined ? dto.price : current.price,
-          minQuantity: dto.min_quantity !== undefined ? dto.min_quantity : current.minQuantity,
-          unit: dto.unit !== undefined ? dto.unit : current.unit,
-          ...(dto.category_id !== undefined
-            ? {
-                category: dto.category_id
-                  ? { connect: { id: dto.category_id } }
-                  : { disconnect: true },
-              }
-            : {}),
+      if (dto.category_id !== undefined && dto.category_id) {
+        const category = await tx.category.findFirst({
+          where: { id: dto.category_id, companyId },
+        });
+        if (!category) {
+          throw ApiError.notFound("Categoria não encontrada");
+        }
+      }
+
+      return tx.product.update({
+        where: { id },
+        data: {
+          name: dto.name ?? current.name,
+          description: dto.description !== undefined ? dto.description : current.description,
+          sku: dto.sku !== undefined ? dto.sku : current.sku,
+          price: dto.price ?? current.price,
+          minQuantity: dto.min_quantity ?? current.minQuantity,
+          unit: dto.unit ?? current.unit,
+          ...(dto.category_id !== undefined && { categoryId: dto.category_id }),
         },
-        tx,
-      );
+        include: { category: true },
+      });
     });
 
     return toProductDTO(updated);
   },
 
-  async remove(id: string): Promise<void> {
-    const current = await productRepository.findById(id);
+  async remove(id: string, companyId: string): Promise<void> {
+    const current = await productRepository.findById(id, companyId);
     if (!current) throw ApiError.notFound("Produto não encontrado");
     await productRepository.softDelete(id);
   },
 
-  async setImage(id: string, imageUrl: string): Promise<ProductResponseDTO> {
-    const current = await productRepository.findById(id);
+  async setImage(id: string, imageUrl: string, companyId: string): Promise<ProductResponseDTO> {
+    const current = await productRepository.findById(id, companyId);
     if (!current) throw ApiError.notFound("Produto não encontrado");
     const updated = await productRepository.update(id, { imageUrl });
     return toProductDTO(updated);

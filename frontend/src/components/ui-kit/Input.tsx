@@ -42,9 +42,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 );
 Input.displayName = "Input";
 
-interface TextareaProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement>,
-    FieldProps {}
+interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement>, FieldProps {}
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ label, hint, error, required, className, id, ...props }, ref) => {
@@ -78,9 +76,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
 );
 Textarea.displayName = "Textarea";
 
-interface SelectProps
-  extends React.SelectHTMLAttributes<HTMLSelectElement>,
-    FieldProps {
+interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement>, FieldProps {
   children: ReactNode;
 }
 

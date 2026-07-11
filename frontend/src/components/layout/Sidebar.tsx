@@ -61,8 +61,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         <nav className="flex flex-1 flex-col gap-1 px-3 py-4">
           {items.map((item) => {
             const Icon = item.icon;
-            const active =
-              pathname === item.to || pathname.startsWith(item.to + "/");
+            const active = pathname === item.to || pathname.startsWith(item.to + "/");
             return (
               <Link
                 key={item.to}

@@ -145,5 +145,5 @@ productRouter.post(
   "/:id/image",
   validate(uuidParamSchema),
   handleUpload,
-  asyncHandler(productController.uploadImage),
+  asyncHandler(productController.setImage),
 );

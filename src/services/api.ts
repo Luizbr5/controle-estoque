@@ -75,11 +75,7 @@ export function toClientError(err: unknown): ApiClientError {
       body.error.details,
     );
   }
-  return new ApiClientError(
-    "INTERNAL_ERROR",
-    (err as Error)?.message ?? "Erro inesperado",
-    500,
-  );
+  return new ApiClientError("INTERNAL_ERROR", (err as Error)?.message ?? "Erro inesperado", 500);
 }
 
 // Helper para simular latência nos mocks.

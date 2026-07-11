@@ -10,7 +10,10 @@ import type {
 } from "@/types/api";
 
 export const categoryService = {
-  async list(): Promise<{ data: CategoryResponseDTO[]; meta: ApiListSuccess<CategoryResponseDTO>["meta"] }> {
+  async list(): Promise<{
+    data: CategoryResponseDTO[];
+    meta: ApiListSuccess<CategoryResponseDTO>["meta"];
+  }> {
     if (USE_MOCK) {
       return mockDelay({
         data: [...categories],

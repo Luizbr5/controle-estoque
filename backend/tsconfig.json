@@ -3,8 +3,7 @@
     "target": "ES2021",
     "lib": ["ES2021"],
     "module": "CommonJS",
-    "moduleResolution": "node10",
-    "ignoreDeprecations": "6.0",
+    "moduleResolution": "node",
     "rootDir": "src",
     "outDir": "dist",
     "baseUrl": ".",
@@ -16,7 +15,6 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "sourceMap": true,
-
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
@@ -31,7 +29,6 @@
     "noFallthroughCasesInSwitch": true,
     "exactOptionalPropertyTypes": false,
     "noUncheckedIndexedAccess": false,
-
     "declaration": false,
     "removeComments": false,
     "experimentalDecorators": true,

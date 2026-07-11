@@ -32,10 +32,9 @@ export const stockMovementService = {
       });
     }
     try {
-      const { data } = await api.get<ApiListSuccess<StockMovementResponseDTO>>(
-        "/stock-movements",
-        { params: query },
-      );
+      const { data } = await api.get<ApiListSuccess<StockMovementResponseDTO>>("/stock-movements", {
+        params: query,
+      });
       return { data: data.data, meta: data.meta };
     } catch (e) {
       throw toClientError(e);

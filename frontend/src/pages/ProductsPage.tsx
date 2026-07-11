@@ -215,9 +215,7 @@ export function ProductsPage() {
                   <tr key={p.id} className="hover:bg-accent/30">
                     <td className="px-4 py-3 font-medium text-foreground">{p.name}</td>
                     <td className="px-4 py-3 text-muted-foreground">{p.sku ?? "—"}</td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {p.category?.name ?? "—"}
-                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{p.category?.name ?? "—"}</td>
                     <td className="px-4 py-3 text-right text-foreground">{currency(p.price)}</td>
                     <td className="px-4 py-3 text-right text-foreground">
                       {p.quantity} {p.unit}
@@ -359,11 +357,7 @@ export function ProductsPage() {
             hint="Padrão: 5"
           />
           <Input label="Unidade" placeholder="un, cx, kg…" {...form.register("unit")} />
-          <Input
-            label="Descrição"
-            className="sm:col-span-2"
-            {...form.register("description")}
-          />
+          <Input label="Descrição" className="sm:col-span-2" {...form.register("description")} />
         </form>
       </Modal>
     </div>

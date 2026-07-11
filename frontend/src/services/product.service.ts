@@ -28,9 +28,7 @@ export const productService = {
       if (query.search) {
         const s = query.search.toLowerCase();
         list = list.filter(
-          (p) =>
-            p.name.toLowerCase().includes(s) ||
-            (p.sku ?? "").toLowerCase().includes(s),
+          (p) => p.name.toLowerCase().includes(s) || (p.sku ?? "").toLowerCase().includes(s),
         );
       }
       if (query.category_id) list = list.filter((p) => p.category_id === query.category_id);
@@ -144,16 +142,18 @@ export const productService = {
       const cat =
         dto.category_id !== undefined
           ? dto.category_id
-            ? categories.find((c) => c.id === dto.category_id) ?? null
+            ? (categories.find((c) => c.id === dto.category_id) ?? null)
             : null
-          : current.category && categories.find((c) => c.id === current.category_id) || null;
+          : (current.category && categories.find((c) => c.id === current.category_id)) || null;
       const merged: ProductResponseDTO = {
         ...current,
         ...dto,
-        category_id: dto.category_id !== undefined ? dto.category_id ?? null : current.category_id,
+        category_id:
+          dto.category_id !== undefined ? (dto.category_id ?? null) : current.category_id,
         category: cat ? { id: cat.id, name: cat.name } : null,
-        description: dto.description !== undefined ? dto.description ?? null : current.description,
-        sku: dto.sku !== undefined ? dto.sku ?? null : current.sku,
+        description:
+          dto.description !== undefined ? (dto.description ?? null) : current.description,
+        sku: dto.sku !== undefined ? (dto.sku ?? null) : current.sku,
         updated_at: timestamp(),
       };
       products[idx] = computeLowStock(merged);

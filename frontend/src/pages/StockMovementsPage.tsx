@@ -14,7 +14,10 @@ import { productService } from "@/services/product.service";
 import { dateTime } from "@/utils/format";
 import type { StockMovementType } from "@/types/api";
 
-const typeBadge: Record<StockMovementType, { label: string; variant: "success" | "danger" | "primary" }> = {
+const typeBadge: Record<
+  StockMovementType,
+  { label: string; variant: "success" | "danger" | "primary" }
+> = {
   IN: { label: "Entrada", variant: "success" },
   OUT: { label: "Saída", variant: "danger" },
   ADJUSTMENT: { label: "Ajuste", variant: "primary" },
@@ -62,7 +65,13 @@ export function StockMovementsPage() {
       <Card>
         <CardBody>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <Select value={productId} onChange={(e) => { setProductId(e.target.value); setPage(1); }}>
+            <Select
+              value={productId}
+              onChange={(e) => {
+                setProductId(e.target.value);
+                setPage(1);
+              }}
+            >
               <option value="">Todos os produtos</option>
               {productsQ.data?.data.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -70,14 +79,34 @@ export function StockMovementsPage() {
                 </option>
               ))}
             </Select>
-            <Select value={type} onChange={(e) => { setType(e.target.value as any); setPage(1); }}>
+            <Select
+              value={type}
+              onChange={(e) => {
+                setType(e.target.value as any);
+                setPage(1);
+              }}
+            >
               <option value="">Todos os tipos</option>
               <option value="IN">Entrada</option>
               <option value="OUT">Saída</option>
               <option value="ADJUSTMENT">Ajuste</option>
             </Select>
-            <Input type="date" value={start} onChange={(e) => { setStart(e.target.value); setPage(1); }} />
-            <Input type="date" value={end} onChange={(e) => { setEnd(e.target.value); setPage(1); }} />
+            <Input
+              type="date"
+              value={start}
+              onChange={(e) => {
+                setStart(e.target.value);
+                setPage(1);
+              }}
+            />
+            <Input
+              type="date"
+              value={end}
+              onChange={(e) => {
+                setEnd(e.target.value);
+                setPage(1);
+              }}
+            />
           </div>
         </CardBody>
       </Card>
@@ -135,7 +164,12 @@ export function StockMovementsPage() {
               Página {listQ.data.meta.page} de {listQ.data.meta.totalPages}
             </span>
             <div className="flex gap-2">
-              <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => p - 1)}
+              >
                 Anterior
               </Button>
               <Button

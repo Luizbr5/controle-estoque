@@ -16,7 +16,10 @@ import { EmptyState } from "@/components/ui-kit/EmptyState";
 import type { StockMovementType } from "@/types/api";
 import { ApiClientError } from "@/services/api";
 
-const typeLabel: Record<StockMovementType, { label: string; variant: "success" | "danger" | "primary" }> = {
+const typeLabel: Record<
+  StockMovementType,
+  { label: string; variant: "success" | "danger" | "primary" }
+> = {
   IN: { label: "Entrada", variant: "success" },
   OUT: { label: "Saída", variant: "danger" },
   ADJUSTMENT: { label: "Ajuste", variant: "primary" },
@@ -187,7 +190,11 @@ export function ProductDetailPage() {
               </table>
             </div>
           ) : (
-            <EmptyState icon={Package} title="Sem histórico" description="Registre a primeira movimentação." />
+            <EmptyState
+              icon={Package}
+              title="Sem histórico"
+              description="Registre a primeira movimentação."
+            />
           )}
         </CardBody>
       </Card>
@@ -212,9 +219,7 @@ export function ProductDetailPage() {
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        {label}
-      </dt>
+      <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
       <dd className="mt-1 text-sm text-foreground">{value}</dd>
     </div>
   );
