@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const items = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -83,6 +84,11 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
         <div className="border-t border-sidebar-border px-5 py-3 text-xs text-muted-foreground">
           v2.0.0 · Front-end
+        </div>
+
+        {/* ThemeToggle aqui! */}
+        <div className="border-t border-sidebar-border p-4">
+          <ThemeToggle />
         </div>
       </aside>
     </>

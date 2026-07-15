@@ -1,8 +1,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Outlet, Link, createRootRouteWithContext, useRouter } from "@tanstack/react-router";
+import { Outlet, createRootRouteWithContext } from "@tanstack/react-router";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 function NotFoundComponent() {
   return (
@@ -14,12 +15,12 @@ function NotFoundComponent() {
           O recurso que você procura não existe ou foi movido.
         </p>
         <div className="mt-6">
-          <Link
-            to="/dashboard"
+          <a
+            href="/dashboard"
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
           >
             Ir para o Dashboard
-          </Link>
+          </a>
         </div>
       </div>
     </div>
@@ -28,7 +29,6 @@ function NotFoundComponent() {
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
-  const router = useRouter();
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
@@ -38,10 +38,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
-            onClick={() => {
-              router.invalidate();
-              reset();
-            }}
+            onClick={reset}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
           >
             Tentar novamente
@@ -70,10 +67,25 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <Outlet />
-          <Toaster position="top-right" richColors closeButton theme="system" visibleToasts={3} />
+          <RootLayoutContent />
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
+  );
+}
+
+function RootLayoutContent() {
+  const { theme } = useTheme();
+  return (
+    <>
+      <Outlet />
+      <Toaster
+        position="top-right"
+        richColors
+        closeButton
+        theme={theme === "dark" ? "dark" : "light"}
+        visibleToasts={3}
+      />
+    </>
   );
 }

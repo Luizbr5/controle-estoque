@@ -3,9 +3,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { showToast } from "@/utils/toast";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { Link } from "@tanstack/react-router";
 import { Plus, Search, Pencil, Trash2, Eye, Package } from "lucide-react";
-import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui-kit/Button";
 import { Input, Select } from "@/components/ui-kit/Input";
@@ -112,22 +113,22 @@ export function ProductsPage() {
       return productService.create(payload);
     },
     onSuccess: () => {
-      toast.success(editing ? "Produto atualizado" : "Produto criado");
+      showToast.success(editing ? "Produto atualizado" : "Produto criado");
       qc.invalidateQueries({ queryKey: ["products"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       setModalOpen(false);
     },
-    onError: (e) => toast.error((e as ApiClientError).message),
+    onError: (e) => showToast.error((e as ApiClientError).message),
   });
 
   const removeMutation = useMutation({
     mutationFn: (id: string) => productService.remove(id),
     onSuccess: () => {
-      toast.success("Produto desativado");
+      showToast.success("Produto desativado");
       qc.invalidateQueries({ queryKey: ["products"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
     },
-    onError: (e) => toast.error((e as ApiClientError).message),
+    onError: (e) => showToast.error((e as ApiClientError).message),
   });
 
   return (
@@ -236,16 +237,25 @@ export function ProductsPage() {
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="icon"
-                          size="icon"
-                          onClick={() => {
-                            if (confirm(`Desativar "${p.name}"?`)) removeMutation.mutate(p.id);
-                          }}
-                          aria-label="Desativar"
+                        <ConfirmDialog
+                          title="Desativar Produto?"
+                          message={`Tem certeza que deseja desativar "${p.name}"?`}
+                          confirmText="Desativar"
+                          cancelText="Cancelar"
+                          isDangerous={true}
+                          onConfirm={() => removeMutation.mutate(p.id)}
                         >
-                          <Trash2 className="h-4 w-4 text-danger" />
-                        </Button>
+                          {(openDialog) => (
+                            <Button
+                              variant="icon"
+                              size="icon"
+                              onClick={openDialog}
+                              aria-label="Desativar"
+                            >
+                              <Trash2 className="h-4 w-4 text-danger" />
+                            </Button>
+                          )}
+                        </ConfirmDialog>
                       </div>
                     </td>
                   </tr>
