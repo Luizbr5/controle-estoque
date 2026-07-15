@@ -2,6 +2,7 @@ import type { Category } from "@prisma/client";
 import { prisma } from "@/config/prisma";
 import { categoryRepository } from "@/repositories/category.repository";
 import { ApiError } from "@/utils/ApiError";
+import { cache } from "@/config/cache";
 import type {
   ApiListSuccess,
   CategoryResponseDTO,
@@ -19,22 +20,50 @@ export function toCategoryDTO(category: Category): CategoryResponseDTO {
   };
 }
 
+// Tipos para cache
+type CategoryListResult = {
+  data: CategoryResponseDTO[];
+  meta: ApiListSuccess<CategoryResponseDTO>["meta"];
+};
+
 export const categoryService = {
-  async list(companyId: string): Promise<{
-    data: CategoryResponseDTO[];
-    meta: ApiListSuccess<CategoryResponseDTO>["meta"];
-  }> {
+  async list(companyId: string): Promise<CategoryListResult> {
+    // Tentar pegar do cache
+    const cacheKey = `categories:${companyId}`;
+    const cached = cache.get<CategoryListResult>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const categories = await categoryRepository.findAll(companyId);
-    return {
+    const result: CategoryListResult = {
       data: categories.map(toCategoryDTO),
       meta: { total: categories.length, page: 1, limit: 20, totalPages: 1 },
     };
+
+    // Guardar no cache por 5 minutos
+    cache.set<CategoryListResult>(cacheKey, result, 300);
+
+    return result;
   },
 
   async getById(id: string, companyId: string): Promise<CategoryResponseDTO> {
+    // Tentar pegar do cache
+    const cacheKey = `category:${companyId}:${id}`;
+    const cached = cache.get<CategoryResponseDTO>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const category = await categoryRepository.findById(id, companyId);
     if (!category) throw ApiError.notFound("Categoria não encontrada");
-    return toCategoryDTO(category);
+
+    const result = toCategoryDTO(category);
+
+    // Guardar no cache por 5 minutos
+    cache.set<CategoryResponseDTO>(cacheKey, result, 300);
+
+    return result;
   },
 
   async create(dto: CreateCategoryDTO, companyId: string): Promise<CategoryResponseDTO> {
@@ -52,6 +81,10 @@ export const categoryService = {
         tx,
       );
     });
+
+    // Limpar cache quando criar nova categoria
+    cache.delete(`categories:${companyId}:*`);
+
     return toCategoryDTO(created);
   },
 
@@ -80,6 +113,11 @@ export const categoryService = {
         tx,
       );
     });
+
+    // Limpar cache quando atualizar
+    cache.delete(`categories:${companyId}:*`);
+    cache.delete(`category:${companyId}:${id}`);
+
     return toCategoryDTO(updated);
   },
 
@@ -87,5 +125,9 @@ export const categoryService = {
     const current = await categoryRepository.findById(id, companyId);
     if (!current) throw ApiError.notFound("Categoria não encontrada");
     await categoryRepository.remove(id);
+
+    // Limpar cache quando deletar
+    cache.delete(`categories:${companyId}:*`);
+    cache.delete(`category:${companyId}:${id}`);
   },
 };

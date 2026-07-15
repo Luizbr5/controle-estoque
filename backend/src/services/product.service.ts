@@ -2,6 +2,7 @@ import { prisma } from "@/config/prisma";
 import { productRepository } from "@/repositories/product.repository";
 import { ApiError } from "@/utils/ApiError";
 import { buildMeta, normalizePagination } from "@/utils/pagination";
+import { cache } from "@/config/cache";
 import type {
   ApiListSuccess,
   CreateProductDTO,
@@ -39,11 +40,26 @@ export function toProductDTO(product: any): ProductResponseDTO {
   };
 }
 
+// Tipos para cache
+type ProductListResult = {
+  data: ProductResponseDTO[];
+  meta: ApiListSuccess<ProductResponseDTO>["meta"];
+};
+
+// Função auxiliar para gerar chave de cache
+function getCacheKey(companyId: string, query?: any): string {
+  return `products:${companyId}:${JSON.stringify(query || {})}`;
+}
+
 export const productService = {
-  async list(query: ProductListQuery, companyId: string): Promise<{
-    data: ProductResponseDTO[];
-    meta: ApiListSuccess<ProductResponseDTO>["meta"];
-  }> {
+  async list(query: ProductListQuery, companyId: string): Promise<ProductListResult> {
+    // Tentar pegar do cache
+    const cacheKey = getCacheKey(companyId, query);
+    const cached = cache.get<ProductListResult>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const { page, limit } = normalizePagination(query, 100);
     const isActive = query.is_active ?? true;
 
@@ -61,13 +77,34 @@ export const productService = {
     const total = filtered.length;
     const paged = filtered.slice((page - 1) * limit, page * limit);
 
-    return { data: paged.map(toProductDTO), meta: buildMeta(total, page, limit) };
+    const result: ProductListResult = { 
+      data: paged.map(toProductDTO), 
+      meta: buildMeta(total, page, limit) 
+    };
+
+    // Guardar no cache por 5 minutos
+    cache.set<ProductListResult>(cacheKey, result, 300);
+
+    return result;
   },
 
   async getById(id: string, companyId: string): Promise<ProductResponseDTO> {
+    // Tentar pegar do cache
+    const cacheKey = `product:${companyId}:${id}`;
+    const cached = cache.get<ProductResponseDTO>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const product = await productRepository.findById(id, companyId);
     if (!product) throw ApiError.notFound("Produto não encontrado");
-    return toProductDTO(product);
+    
+    const result = toProductDTO(product);
+    
+    // Guardar no cache por 5 minutos
+    cache.set<ProductResponseDTO>(cacheKey, result, 300);
+    
+    return result;
   },
 
   async create(dto: CreateProductDTO, userId: string, companyId: string): Promise<ProductResponseDTO> {
@@ -123,6 +160,9 @@ export const productService = {
       return created;
     });
 
+    // Limpar cache quando criar novo produto
+    cache.delete(`products:${companyId}:*`);
+
     return toProductDTO(product);
   },
 
@@ -166,6 +206,10 @@ export const productService = {
       });
     });
 
+    // Limpar cache quando atualizar
+    cache.delete(`products:${companyId}:*`);
+    cache.delete(`product:${companyId}:${id}`);
+
     return toProductDTO(updated);
   },
 
@@ -173,12 +217,21 @@ export const productService = {
     const current = await productRepository.findById(id, companyId);
     if (!current) throw ApiError.notFound("Produto não encontrado");
     await productRepository.softDelete(id);
+
+    // Limpar cache quando deletar
+    cache.delete(`products:${companyId}:*`);
+    cache.delete(`product:${companyId}:${id}`);
   },
 
   async setImage(id: string, imageUrl: string, companyId: string): Promise<ProductResponseDTO> {
     const current = await productRepository.findById(id, companyId);
     if (!current) throw ApiError.notFound("Produto não encontrado");
     const updated = await productRepository.update(id, { imageUrl });
+
+    // Limpar cache quando atualizar imagem
+    cache.delete(`product:${companyId}:${id}`);
+    cache.delete(`products:${companyId}:*`);
+
     return toProductDTO(updated);
   },
 };
