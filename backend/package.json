@@ -70,8 +70,10 @@
     "seed": "tsx prisma/seed.ts"
   },
   "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js",
+    "build": "tsc",
     "test": "vitest",
-    "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "test:ui": "vitest --ui"
   }
 }
