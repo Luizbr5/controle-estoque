@@ -17,7 +17,9 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test": "vitest",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",
@@ -68,12 +70,5 @@
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
-  },
-  "scripts": {
-    "dev": "tsx watch src/server.ts",
-    "start": "node dist/server.js",
-    "build": "tsc",
-    "test": "vitest",
-    "test:ui": "vitest --ui"
   }
 }
