@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: estoque-backend
+    runtime: node
+    plan: free
+    buildCommand: npm install && npx prisma migrate deploy
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        value: eff7f115cb8e0759a092717154c009a8f68e2303ab7a594a012eb15e63dad5022cb1c1f1963d0127bd67803b5be8fa38fa909b9a83d770baebb1a2bd55fef2c5
+      - key: CORS_ORIGIN
+        value: http://localhost:5173,http://localhost:3000
+      - key: SENTRY_DSN
+        value: https://93d2bc3cad32ac0f50d99b59638ed23b@o4511730618400768.ingest.us.sentry.io/4511730637144064
+      - key: DATABASE_URL
+        fromDatabase:
+          name: estoque-db
+          property: connectionString
+
+databases:
+  - name: estoque-db
+    plan: free
