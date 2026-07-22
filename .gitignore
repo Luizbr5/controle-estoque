@@ -6,12 +6,18 @@ yarn.lock
 # Build
 dist/
 build/
+dist-ssr/
+.output/
+.vinxi/
+.tanstack/
+.nitro/
 *.tsbuildinfo
 
 # Ambiente
 .env
 .env.local
 .env.*.local
+*.local
 
 # Backup
 backups/
