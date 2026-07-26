@@ -7,7 +7,7 @@ export const API_BASE_URL =
 
 // Flag temporária para uso de mocks enquanto o back-end não está disponível.
 // Remover quando o back-end estiver pronto: trocar para false (ou remover a checagem).
-export const USE_MOCK = true;
+export const USE_MOCK = false;
 
 export const TOKEN_STORAGE_KEY = "stockctl:token";
 
@@ -75,11 +75,7 @@ export function toClientError(err: unknown): ApiClientError {
       body.error.details,
     );
   }
-  return new ApiClientError(
-    "INTERNAL_ERROR",
-    (err as Error)?.message ?? "Erro inesperado",
-    500,
-  );
+  return new ApiClientError("INTERNAL_ERROR", (err as Error)?.message ?? "Erro inesperado", 500);
 }
 
 // Helper para simular latência nos mocks.

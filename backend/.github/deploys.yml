@@ -1,0 +1,40 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main, backend]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Test Backend
+        run: |
+          cd backend
+          npm install
+          npm run test
+      
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Deploy to Production
+        run: |
+          echo "Deploying to production..."
+          # Adicionar seu script de deploy aqui

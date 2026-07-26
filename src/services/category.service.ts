@@ -10,7 +10,10 @@ import type {
 } from "@/types/api";
 
 export const categoryService = {
-  async list(): Promise<{ data: CategoryResponseDTO[]; meta: ApiListSuccess<CategoryResponseDTO>["meta"] }> {
+  async list(): Promise<{
+    data: CategoryResponseDTO[];
+    meta: ApiListSuccess<CategoryResponseDTO>["meta"];
+  }> {
     if (USE_MOCK) {
       return mockDelay({
         data: [...categories],
@@ -31,8 +34,12 @@ export const categoryService = {
       if (!c) throw new ApiClientError("NOT_FOUND", "Categoria não encontrada", 404);
       return mockDelay(c);
     }
-    const { data } = await api.get<ApiSuccess<CategoryResponseDTO>>(`/categories/${id}`);
-    return data.data;
+    try {
+      const { data } = await api.get<ApiSuccess<CategoryResponseDTO>>(`/categories/${id}`);
+      return data.data;
+    } catch (e) {
+      throw toClientError(e);
+    }
   },
 
   async create(dto: CreateCategoryDTO): Promise<CategoryResponseDTO> {
